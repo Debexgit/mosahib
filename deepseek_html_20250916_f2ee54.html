@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مصاحب: مساعدك التربوي الذكي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            direction: rtl;
+            background-color: #f8fafc;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #14b8a6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .tool-card {
+            transition: all 0.3s ease;
+            border: 1px solid #e5e7eb;
+        }
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border-color: #14b8a6;
+        }
+        .mobile-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .mobile-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .modal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: scale(0.9);
+            opacity: 0;
+        }
+        .modal.active {
+            transform: scale(1);
+            opacity: 1;
+        }
+        .category-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-gray-800">
+
+    <div id="app" class="container mx-auto max-w-6xl p-3 sm:p-4 md:p-6">
+        
+        <div id="main-app-view">
+             <header class="text-center mb-8 sm:mb-10">
+                <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">مصاحب</h1>
+                <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-teal-600 mt-2">مساعدك التربوي الذكي</h2>
+                <p class="mt-3 text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">أدوات ذكية بين يديك لتسهيل مهامك التربوية اليومية.</p>
+            </header>
+
+            <main>
+                <section id="gemini-assistant">
+                    <div class="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 md:p-8">
+                        <div class="mb-6">
+                            <h2 class="text-2xl sm:text-3xl font-bold text-teal-600 mb-3 text-center">🤖 اختر أداتك الذكية</h2>
+                            <div class="relative w-full max-w-xl mx-auto">
+                                <input type="text" id="search-tools" placeholder="ابحث عن أداة..." class="w-full p-3 pr-10 text-gray-700 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm sm:text-base">
+                                <span class="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 text-xl sm:text-2xl">🔍</span>
+                            </div>
+                        </div>
+                        
+                        <div id="tools-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                            <!-- سيتم ملء هذا القسم بواسطة JavaScript -->
+                        </div>
+                    </div>
+                </section>
+            </main>
+             <footer class="text-center mt-10 sm:mt-12 pt-6 border-t border-gray-200">
+                <p class="text-gray-600 font-semibold text-sm sm:text-base">Debex &copy; 2025</p>
+            </footer>
+        </div>
+
+        <div id="modals-container"></div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiKey = "AIzaSyDxFiTACc_-KTnS0Ai8y5Gzex8lL59wX_4";
+            const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            
+            const toolsData = {
+                "التخطيط": [
+                    { id: "unit", icon: "📅", name: "مخطط الوحدات", desc: "خطط لوحدة دراسية كاملة." },
+                    { id: "lesson", icon: "✨", name: "مخطط الدروس", desc: "جهز لدرسك في دقائق." },
+                    { id: "objectives", icon: "🎯", name: "مساعد الأهداف", desc: "حدد أهدافاً تربوية واضحة." }
+                ],
+                "إنشاء المحتوى": [
+                    { id: "activity", icon: "💡", name: "مولّد الأنشطة", desc: "احصل على أفكار أنشطة جديدة." },
+                    { id: "story", icon: "📖", name: "مولّد القصص", desc: "اكتب قصصاً مخصصة للأطفال." },
+                    { id: "song", icon: "🎶", name: "مولّد الأناشيد", desc: "ألّف أناشيد تعليمية بسهولة." },
+                    { id: "questions", icon: "🤔", name: "مولّد الأسئلة", desc: "اطرح أسئلة تثير الفضول." }
+                ],
+                "إدارة الفصل": [
+                    { id: "transition", icon: "🚀", name: "مساعد الانتقالات", desc: "نظم الفترات الانتقالية." },
+                    { id: "conflict", icon: "🗣️", name: "مساعد النزاعات", desc: "حوّل النزاعات لفرص تعلم." },
+                    { id: "roleplay", icon: "🎭", name: "لعب الأدوار", desc: "علّم المهارات الاجتماعية." }
+                ],
+                 "المتابعة والتواصل": [
+                    { id: "observation", icon: "📋", name: "تدوين الملاحظات", desc: "حوّل ملاحظاتك لتقارير." },
+                    { id: "communication", icon: "✉️", name: "رسائل للأهل", desc: "تواصل بفعالية مع الآباء." },
+                    { id: "summary", icon: "📝", name: "ملخص اليوم", desc: "لخص يوم الأطفال بإيجاز." }
+                ]
+            };
+
+            const colors = {
+                "التخطيط": "blue",
+                "إنشاء المحتوى": "green", 
+                "إدارة الفصل": "yellow",
+                "المتابعة والتواصل": "purple"
+            };
+
+            const colorClasses = {
+                blue: { border: "border-blue-500", text: "text-blue-600", bg: "bg-blue-50" },
+                green: { border: "border-green-500", text: "text-green-600", bg: "bg-green-50" },
+                yellow: { border: "border-yellow-500", text: "text-yellow-600", bg: "bg-yellow-50" },
+                purple: { border: "border-purple-500", text: "text-purple-600", bg: "bg-purple-50" },
+            };
+
+            const appState = {
+                activeModal: null,
+                isGenerating: false
+            };
+
+            function generateAllModals() {
+                const modalsContainer = document.getElementById('modals-container');
+                let allModalsHTML = '';
+
+                for (const category in toolsData) {
+                    toolsData[category].forEach(tool => {
+                        allModalsHTML += `
+                            <div id="${tool.id}-modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-3 sm:p-4 z-50">
+                                <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-4 sm:p-5 relative mx-2">
+                                    <button data-close-button class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                                    <h3 class="text-xl sm:text-2xl font-bold text-center mb-3 text-teal-600 flex items-center justify-center gap-2">${tool.icon} ${tool.name}</h3>
+                                    <form id="${tool.id}Form" class="modal-form">
+                                        <div class="mb-4">
+                                            <label for="${tool.id}Input" class="block text-gray-700 text-sm font-bold mb-2">أدخل طلبك هنا:</label>
+                                            <textarea id="${tool.id}Input" rows="3" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm" placeholder="${tool.desc}"></textarea>
+                                        </div>
+                                        <div class="text-center">
+                                            <button type="submit" class="bg-teal-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-teal-600 transition-colors text-sm">
+                                                ✨ توليد
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <div id="${tool.id}Result" class="mt-4 hidden">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-lg font-bold text-gray-800">النتيجة:</h4>
+                                            <button class="copy-btn bg-slate-200 text-slate-700 text-xs py-1 px-2 rounded hover:bg-slate-300">نسخ النص</button>
+                                        </div>
+                                        <div id="${tool.id}Loader" class="loader mx-auto my-3 hidden"></div>
+                                        <div id="${tool.id}ResultText" class="bg-slate-100 p-3 rounded-lg text-right font-sans h-40 overflow-y-auto text-sm"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                modalsContainer.innerHTML = allModalsHTML;
+            }
+            
+            function copyTextToClipboard(text, button) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalText = button.textContent;
+                    button.textContent = 'تم النسخ!';
+                    button.classList.add('bg-green-200', 'text-green-800');
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.classList.remove('bg-green-200', 'text-green-800');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+            }
+
+            function showModal(modalId) {
+                if (appState.activeModal) {
+                    hideModal(appState.activeModal);
+                }
+                
+                const modal = document.getElementById(`${modalId}-modal`);
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    setTimeout(() => {
+                        modal.classList.add('active');
+                    }, 10);
+                    appState.activeModal = modalId;
+                    
+                    // إضافة حدث لإغلاق النافذة عند النقر خارجها
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            hideModal(modalId);
+                        }
+                    });
+                }
+            }
+
+            function hideModal(modalId) {
+                const modal = document.getElementById(`${modalId}-modal`);
+                if (modal) {
+                    modal.classList.remove('active');
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                    }, 300);
+                    appState.activeModal = null;
+                }
+            }
+
+            function attachEventListeners() {
+                // النقر على أزرار الأدوات لفتح النوافذ المنبثقة
+                document.addEventListener('click', (e) => {
+                    const toolButton = e.target.closest('[data-modal]');
+                    if (toolButton) {
+                        const modalId = toolButton.dataset.modal;
+                        showModal(modalId);
+                    }
+                });
+
+                // النقر على أزرار الإغلاق
+                document.addEventListener('click', (e) => {
+                    if (e.target.matches('[data-close-button]')) {
+                        const modal = e.target.closest('.modal');
+                        if (modal) {
+                            const modalId = modal.id.replace('-modal', '');
+                            hideModal(modalId);
+                        }
+                    }
+                });
+
+                // إرسال النماذج
+                document.querySelectorAll('.modal-form').forEach(form => {
+                   form.addEventListener('submit', (e) => handleFormSubmit(e));
+                });
+
+                // أزرار النسخ
+                document.addEventListener('click', (e) => {
+                    if (e.target.matches('.copy-btn')) {
+                        const textToCopy = e.target.closest('div[id$="Result"]').querySelector('div[id$="ResultText"]').textContent;
+                        copyTextToClipboard(textToCopy, e.target);
+                    }
+                });
+            }
+
+            function renderTools(filter = '') {
+                const container = document.getElementById('tools-container');
+                container.innerHTML = '';
+                
+                let hasTools = false;
+
+                for (const category in toolsData) {
+                    const filteredTools = toolsData[category].filter(tool => 
+                        tool.name.includes(filter) || tool.desc.includes(filter) || category.includes(filter)
+                    );
+                    
+                    if (filteredTools.length === 0) continue;
+                    
+                    hasTools = true;
+                    const color = colors[category];
+                    
+                    const categoryHTML = `
+                        <div class="col-span-full mb-2 mt-4">
+                            <h3 class="category-title ${colorClasses[color].text} ${colorClasses[color].border}">${category}</h3>
+                        </div>
+                    `;
+                    container.innerHTML += categoryHTML;
+
+                    filteredTools.forEach(tool => {
+                        const toolHTML = `
+                            <div class="mb-3">
+                                <button data-modal="${tool.id}" class="w-full text-right p-3 rounded-lg ${colorClasses[color].bg} hover:bg-opacity-70 tool-card border ${colorClasses[color].border}">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-2xl">${tool.icon}</span>
+                                        <div class="text-right">
+                                            <h4 class="font-bold text-gray-800">${tool.name}</h4>
+                                            <p class="text-xs text-gray-500 mt-1">${tool.desc}</p>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+                        `;
+                        container.innerHTML += toolHTML;
+                    });
+                }
+                
+                if (!hasTools) {
+                    container.innerHTML = '<p class="text-center py-6 text-gray-500 col-span-full">لا توجد أدوات تطابق بحثك</p>';
+                }
+            }
+            
+            document.getElementById('search-tools').addEventListener('input', (e) => {
+                renderTools(e.target.value);
+            });
+            
+            async function handleFormSubmit(e) {
+                e.preventDefault();
+                const form = e.target;
+                const toolId = form.id.replace('Form', '');
+                const inputEl = form.querySelector('textarea');
+                const input = inputEl.value;
+
+                if (!input.trim()) {
+                    alert('الرجاء إدخال طلبك.');
+                    return;
+                }
+                
+                const resultContainer = document.getElementById(`${toolId}Result`);
+                const loader = document.getElementById(`${toolId}Loader`);
+                const resultTextEl = document.getElementById(`${toolId}ResultText`);
+
+                resultContainer.classList.remove('hidden');
+                loader.classList.remove('hidden');
+                resultTextEl.textContent = '';
+
+                const submitButton = form.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = 'جاري التوليد...';
+
+                resultTextEl.textContent = 'جاري معالجة طلبك، يرجى الانتظار...';
+
+                try {
+                    const systemPrompt = "أنت مساعد تربوي متخصص في التعليم الأولي. قدم إجابات مفيدة ومبتكرة ومناسبة للأطفال الصغار والمربيات.";
+                    const resultText = await generateTextWithRetry(systemPrompt, input);
+                    resultTextEl.textContent = resultText;
+                    form.reset();
+                } catch (error) {
+                    console.error("Error generating text:", error);
+                    resultTextEl.textContent = 'عذرًا، حدث خطأ. الرجاء المحاولة مرة أخرى.';
+                } finally {
+                    loader.classList.add('hidden');
+                    submitButton.disabled = false;
+                    submitButton.textContent = '✨ توليد';
+                }
+            }
+
+            async function generateTextWithRetry(systemPrompt, userQuery, retries = 3, delay = 1000) {
+                if (!apiKey) {
+                    return "خطأ: مفتاح API الخاص بـ Gemini غير موجود. يرجى إضافته في الكود.";
+                }
+                
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const payload = {
+                            contents: [{ parts: [{ text: userQuery }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] },
+                        };
+                        
+                        const response = await fetch(textApiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!response.ok) {
+                             throw new Error(`API request failed with status ${response.status}`);
+                        }
+                        
+                        const result = await response.json();
+                        const candidate = result.candidates?.[0];
+                        if (candidate && candidate.content?.parts?.[0]?.text) {
+                            return candidate.content.parts[0].text;
+                        } else {
+                            console.warn("Unexpected API response structure:", result);
+                            if(candidate && candidate.finishReason !== 'STOP'){
+                                return `تم حظر الطلب. السبب: ${candidate.finishReason}`;
+                            }
+                            throw new Error('Invalid response structure from API');
+                        }
+                    } catch (error) {
+                        console.error(`Text generation attempt ${i + 1} failed:`, error);
+                        if (i < retries - 1) {
+                            await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
+                        } else {
+                           throw error;
+                        }
+                    }
+                }
+            }
+
+            // بدء التطبيق
+            generateAllModals();
+            renderTools();
+            attachEventListeners();
+        });
+    </script>
+
+</body>
+</html>
